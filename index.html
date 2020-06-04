@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Learn WebGL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+  </head>
+  <body>
+    <script id="vs" type="notjs">
+
+      attribute vec2 a_position;
+      attribute vec2 a_texCoord;
+      uniform vec2 u_resolution;
+      varying vec2 v_texCoord;
+
+      void main() {
+        // convert the position from pixels to 0.0 to 1.0
+        vec2 zeroToOne = a_position / u_resolution;
+
+        // convert from 0->1 to 0->2
+        vec2 zeroToTwo = zeroToOne * 2.0;
+
+        // convert from 0->2 to -1->+1 (clip space)
+        vec2 clipSpace = zeroToTwo - 1.0;
+
+        gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+
+        // pass the texCoord to the fragment shader
+        // The GPU will interpolate this value between points.
+        v_texCoord = a_texCoord;
+      }
+    </script>
+
+    <script id="fs" type="notjs">
+      precision mediump float;
+
+      uniform sampler2D u_image;
+      uniform float u_ww;
+      uniform float u_wc;
+      uniform float u_slope;
+      uniform float u_intercept;
+      uniform int u_invert;
+      varying vec2 v_texCoord;
+
+      void main() {
+        // get texture
+        vec4 color = texture2D(u_image, v_texCoord);
+
+        // Calculate luminance from packed texture
+        float intensity = color.r*256.0 + color.g*65536.0;
+
+        if (color.b == 0.0)
+          intensity = -intensity;
+
+        // Rescale based on slope and window settings
+        intensity = intensity * u_slope + u_intercept;
+        float center0 = u_wc - 0.5;
+        float width0 = max(u_ww, 1.0);
+        intensity = (intensity - center0) / width0 + 0.5;
+
+        // Clamp intensity
+        intensity = clamp(intensity, 0.0, 1.0);
+
+        // RGBA output
+        gl_FragColor = vec4(intensity, intensity, intensity, 1.0);
+
+        // Apply any inversion necessary
+        if (u_invert == 1)
+          gl_FragColor.rgb = 1.0 - gl_FragColor.rgb;
+      }
+    </script>
+
+    <div class="panel">
+      <h1>Learn WebGL</h1>
+      <canvas id="canvas" width="3000px" height="4000px"></canvas>
+
+      <div class="levels-panel">
+        <input id="_wc" type="number" value="100" />
+        <input id="_ww" type="number" value="800" />
+        <input type="range" min="0" max="8000" value="100" id="wc" />
+        <input type="range" min="0" max="8000" value="800" id="ww" />
+      </div>
+      <script src="dicomParser.min.js"></script>
+      <script src="main.js" type="module"></script>
+    </div>
+  </body>
+</html>

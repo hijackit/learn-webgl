@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.panel {
+  margin: 1rem;
+}
+
+canvas {
+  border: 0px solid red;
+  display: block;
+}
+
+.levels-panel {
+  margin: 1rem 0;
+}
